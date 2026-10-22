@@ -1,0 +1,8 @@
+<resources>
+    <!-- 실제 색과 글꼴은 Compose(ui/theme)에서 정하고, 여기는 시작 화면 배경만 맞춘다 -->
+    <style name="Theme.GeupsikAlimi" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

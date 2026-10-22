@@ -1,0 +1,5 @@
+# 줄바꿈을 저장소에는 LF로 통일한다 (Windows에서 커밋해도 맥·리눅스·깃허브에서 gradlew가 동작하게)
+* text=auto eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary

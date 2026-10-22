@@ -1,0 +1,6 @@
+# 이 파일을 local.properties로 복사해서 값을 채우세요. local.properties는 깃에 올라가지 않습니다.
+sdk.dir=C\:\\Users\\<사용자>\\AppData\\Local\\Android\\Sdk
+
+# 나이스 교육정보 개방 포털(https://open.neis.go.kr) > 인증키 신청에서 발급
+# 비워 두면 샘플 모드로 동작합니다 (검색 결과 최대 5개).
+NEIS_API_KEY=

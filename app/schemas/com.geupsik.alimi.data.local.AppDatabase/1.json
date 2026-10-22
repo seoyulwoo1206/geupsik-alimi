@@ -1,0 +1,93 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "5301fac326ca30f42ad1db26602885ca",
+    "entities": [
+      {
+        "tableName": "meal",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`schoolKey` TEXT NOT NULL, `date` TEXT NOT NULL, `mealCode` INTEGER NOT NULL, `mealName` TEXT NOT NULL, `dishesRaw` TEXT NOT NULL, `calories` TEXT, PRIMARY KEY(`schoolKey`, `date`, `mealCode`))",
+        "fields": [
+          {
+            "fieldPath": "schoolKey",
+            "columnName": "schoolKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealCode",
+            "columnName": "mealCode",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealName",
+            "columnName": "mealName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dishesRaw",
+            "columnName": "dishesRaw",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calories",
+            "columnName": "calories",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "schoolKey",
+            "date",
+            "mealCode"
+          ]
+        }
+      },
+      {
+        "tableName": "week_fetch",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`schoolKey` TEXT NOT NULL, `weekStart` TEXT NOT NULL, `fetchedAtMillis` INTEGER NOT NULL, PRIMARY KEY(`schoolKey`, `weekStart`))",
+        "fields": [
+          {
+            "fieldPath": "schoolKey",
+            "columnName": "schoolKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weekStart",
+            "columnName": "weekStart",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtMillis",
+            "columnName": "fetchedAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "schoolKey",
+            "weekStart"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5301fac326ca30f42ad1db26602885ca')"
+    ]
+  }
+}

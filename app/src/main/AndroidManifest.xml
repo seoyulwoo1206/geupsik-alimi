@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 안드로이드 13 이상에서 알림을 보내려면 사용자 허용이 필요하다 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 재부팅 뒤 알람을 다시 걸기 위해 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- SCHEDULE_EXACT_ALARM은 쓰지 않는다. 몇 분 오차가 있는 일반 알람으로 충분하다. -->
+
+    <application
+        android:name=".GeupsikApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.GeupsikAlimi">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".notification.MealAlarmReceiver"
+            android:exported="false" />
+
+        <!-- 시스템이 보내는 보호된 브로드캐스트를 받으려면 exported=true여야 한다 -->
+        <receiver
+            android:name=".notification.AlarmRestoreReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

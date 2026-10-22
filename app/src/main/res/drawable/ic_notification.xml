@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 상태 표시줄 아이콘: 흰색 실루엣만 쓰인다 (식판 모양) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M4,5h16a2,2 0,0 1,2 2v10a2,2 0,0 1,-2 2h-16a2,2 0,0 1,-2 -2v-10a2,2 0,0 1,2 -2z M4,7v4h4.5v-4z M10,7v4h4v-4z M15.5,7v4h4.5v-4z M4,13v4h7v-4z M13,13v4h7v-4z" />
+</vector>
