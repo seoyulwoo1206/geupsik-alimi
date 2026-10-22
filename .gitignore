@@ -21,3 +21,8 @@ build/
 
 # Claude Code 개인 설정
 .claude/settings.local.json
+
+# 비밀번호 메모 파일이 실수로 올라가지 않게
+*비번*
+*비밀번호*
+*password*
