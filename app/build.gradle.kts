@@ -35,8 +35,8 @@ android {
         minSdk = 26
         targetSdk = 36
         // 새 버전을 낼 때마다 versionCode는 1씩 올리고, versionName은 깃허브 릴리스 태그(v0.2.0)와 맞춘다
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
 
         buildConfigField("String", "NEIS_API_KEY", "\"${localProperty("NEIS_API_KEY")}\"")
     }
