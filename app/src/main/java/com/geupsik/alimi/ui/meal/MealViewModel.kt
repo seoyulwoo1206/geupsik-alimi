@@ -39,8 +39,16 @@ sealed interface WeekLoad {
 class MealViewModel(
     private val schoolRepository: SchoolRepository,
     private val mealRepository: MealRepository,
-    userPrefs: UserPrefs,
+    private val userPrefs: UserPrefs,
 ) : ViewModel() {
+
+    /** 주간 보기인지. null이면 아직 읽는 중 */
+    val weeklyView: StateFlow<Boolean?> = userPrefs.weeklyView
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun setWeeklyView(weekly: Boolean) {
+        viewModelScope.launch { userPrefs.setWeeklyView(weekly) }
+    }
 
     /** 내가 등록한 알레르기 번호. null이면 아직 읽는 중 */
     val allergies: StateFlow<Set<Int>?> = userPrefs.allergies

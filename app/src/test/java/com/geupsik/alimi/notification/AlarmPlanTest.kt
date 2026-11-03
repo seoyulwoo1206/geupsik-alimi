@@ -72,4 +72,13 @@ class AlarmPlanTest {
         assertFalse(AlarmPlan.isStale(target + TimeUnit.MINUTES.toMillis(30), target))
         assertTrue(AlarmPlan.isStale(target + TimeUnit.HOURS.toMillis(3), target))
     }
+
+    @Test
+    fun `끼니마다 시간이 다르면 가장 가까운 시각으로 건다`() {
+        val minutes = setOf(7 * 60, 11 * 60 + 30, 17 * 60)
+        assertEquals(millis(2026, 10, 22, 11, 30), AlarmPlan.nextTarget(millis(2026, 10, 22, 9, 0), minutes, seoul))
+        assertEquals(millis(2026, 10, 23, 7, 0), AlarmPlan.nextTarget(millis(2026, 10, 22, 18, 0), minutes, seoul))
+        assertEquals(null, AlarmPlan.nextTarget(millis(2026, 10, 22, 18, 0), emptySet(), seoul))
+        assertEquals(11 * 60 + 30, AlarmPlan.minuteOfDay(millis(2026, 10, 22, 11, 30), seoul))
+    }
 }

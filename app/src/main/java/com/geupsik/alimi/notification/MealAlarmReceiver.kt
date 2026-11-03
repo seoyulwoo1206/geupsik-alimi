@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 /**
  * 알람이 울릴 때마다 불린다.
- * 아직 목표 시각 전이면 더 가까운 알람을 다시 걸고, 목표 시각이 되면 알림을 보낸 뒤 내일 알람을 건다.
+ * 아직 목표 시각 전이면 더 가까운 알람을 다시 걸고, 목표 시각이 되면 그 시각의 끼니를 알린 뒤 다음 알람을 건다.
  */
 class MealAlarmReceiver : BroadcastReceiver() {
 
@@ -27,7 +27,7 @@ class MealAlarmReceiver : BroadcastReceiver() {
         scope.launch {
             try {
                 val settings = container.userPrefs.notification.first()
-                if (!settings.enabled) return@launch
+                if (settings.activeMinutes.isEmpty()) return@launch
 
                 val now = System.currentTimeMillis()
                 if (target > 0 && !AlarmPlan.isDue(now, target)) {
@@ -35,12 +35,18 @@ class MealAlarmReceiver : BroadcastReceiver() {
                     return@launch
                 }
 
-                // 먼저 내일 알람을 걸어 둔다. 아래에서 문제가 생겨도 알림이 끊기지 않게.
+                // 먼저 다음 알람을 걸어 둔다. 아래에서 문제가 생겨도 알림이 끊기지 않게.
                 container.mealAlarmScheduler.scheduleAfterDelivery(settings, target, now)
                 val alreadySent = container.userPrefs.lastNotifiedTarget.first() == target
-                if (target > 0 && !alreadySent && !AlarmPlan.isStale(now, target)) {
+                val minute = AlarmPlan.minuteOfDay(target)
+                val codes = settings.codesAt(minute)
+                if (target > 0 && codes.isNotEmpty() && !alreadySent && !AlarmPlan.isStale(now, target)) {
                     container.userPrefs.setLastNotifiedTarget(target)
-                    container.dailyMealNotification.send()
+                    container.dailyMealNotification.send(
+                        mealCodes = codes,
+                        // "불러오지 못했어요"는 하루 첫 알림에서만 알려서 같은 말을 여러 번 하지 않는다
+                        reportFailure = minute == settings.activeMinutes.min(),
+                    )
                 }
             } finally {
                 pending.finish()

@@ -8,13 +8,20 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.time.DayOfWeek
 import java.time.LocalDate
 
-/** 오늘 급식을 캐시에서 읽어 알림을 보낸다. 알람이 울렸을 때와 설정의 "테스트 알림"에서 쓴다. */
+/**
+ * 오늘 급식을 캐시에서 읽어 알림을 보낸다. 알람이 울렸을 때와 설정의 "테스트 알림"에서 쓴다.
+ * mealCodes가 null이면 모든 끼니를 한 번에 보낸다.
+ */
 class DailyMealNotification(
     private val prefs: UserPrefs,
     private val mealRepository: MealRepository,
     private val notifier: MealNotifier,
 ) {
-    suspend fun send(today: LocalDate = LocalDate.now()) {
+    suspend fun send(
+        today: LocalDate = LocalDate.now(),
+        mealCodes: Set<Int>? = null,
+        reportFailure: Boolean = true,
+    ) {
         val school = prefs.school.first() ?: return
 
         // 캐시가 오래됐으면 잠깐 새로 받아 본다. 인터넷이 없거나 느리면 캐시만 쓴다.
@@ -22,7 +29,7 @@ class DailyMealNotification(
 
         val day = mealRepository.getDay(school, today)
         val allergies = prefs.allergies.first()
-        MealNotificationText.build(today, day, allergies)?.let(notifier::show)
+        MealNotificationText.build(today, day, allergies, mealCodes, reportFailure)?.let(notifier::show)
 
         // 금~일에는 다음 주 것도 미리 받아 둔다. 월요일 아침에 인터넷이 없어도 알림이 가게.
         if (today.dayOfWeek >= DayOfWeek.FRIDAY) {

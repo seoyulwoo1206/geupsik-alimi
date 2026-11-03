@@ -44,10 +44,16 @@ class UserPrefs(context: Context, private val json: Json) {
         }
     }
 
-    val notification: Flow<NotificationSettings> = store.data.map {
+    val notification: Flow<NotificationSettings> = store.data.map { prefs ->
         NotificationSettings(
-            enabled = it[KEY_NOTIFY_ENABLED] ?: false,
-            minuteOfDay = it[KEY_NOTIFY_MINUTE] ?: NotificationSettings.DEFAULT_MINUTE_OF_DAY,
+            enabled = prefs[KEY_NOTIFY_ENABLED] ?: false,
+            slots = NotificationSettings.MEAL_CODES.map { code ->
+                MealAlarmSlot(
+                    code = code,
+                    enabled = prefs[mealEnabledKey(code)] ?: true,
+                    minuteOfDay = prefs[mealMinuteKey(code)] ?: NotificationSettings.defaultMinute(code),
+                )
+            },
         )
     }
 
@@ -55,8 +61,19 @@ class UserPrefs(context: Context, private val json: Json) {
         store.edit { it[KEY_NOTIFY_ENABLED] = enabled }
     }
 
-    suspend fun setNotificationTime(minuteOfDay: Int) {
-        store.edit { it[KEY_NOTIFY_MINUTE] = minuteOfDay }
+    suspend fun setMealAlarmEnabled(code: Int, enabled: Boolean) {
+        store.edit { it[mealEnabledKey(code)] = enabled }
+    }
+
+    suspend fun setMealAlarmTime(code: Int, minuteOfDay: Int) {
+        store.edit { it[mealMinuteKey(code)] = minuteOfDay }
+    }
+
+    /** 급식 화면을 한 주씩 볼지(true) 하루씩 볼지(false) */
+    val weeklyView: Flow<Boolean> = store.data.map { it[KEY_WEEKLY_VIEW] ?: false }
+
+    suspend fun setWeeklyView(weekly: Boolean) {
+        store.edit { it[KEY_WEEKLY_VIEW] = weekly }
     }
 
     /** 마지막으로 알림을 보낸 목표 시각. 같은 시각 알림이 두 번 가지 않게 한다. */
@@ -99,8 +116,11 @@ class UserPrefs(context: Context, private val json: Json) {
         val KEY_ALLERGIES = stringSetPreferencesKey("allergies")
         val KEY_ALLERGY_NOTICE = booleanPreferencesKey("allergy_notice_accepted")
         val KEY_NOTIFY_ENABLED = booleanPreferencesKey("notify_enabled")
-        val KEY_NOTIFY_MINUTE = intPreferencesKey("notify_minute_of_day")
+
+        fun mealEnabledKey(code: Int) = booleanPreferencesKey("notify_meal_${code}_enabled")
+        fun mealMinuteKey(code: Int) = intPreferencesKey("notify_meal_${code}_minute")
         val KEY_LAST_NOTIFIED = longPreferencesKey("last_notified_target")
+        val KEY_WEEKLY_VIEW = booleanPreferencesKey("weekly_view")
     }
 }
 
@@ -111,12 +131,36 @@ data class UpdateCheckState(
     val dismissedAtMillis: Long,
 )
 
-/** 매일 급식 알림 설정. minuteOfDay는 0시부터 센 분 (7:30 → 450) */
-data class NotificationSettings(val enabled: Boolean, val minuteOfDay: Int) {
+/** 끼니 하나의 알림. code는 1 조식, 2 중식, 3 석식. minuteOfDay는 0시부터 센 분 (7:30 → 450) */
+data class MealAlarmSlot(val code: Int, val enabled: Boolean, val minuteOfDay: Int) {
     val hour: Int get() = minuteOfDay / 60
     val minute: Int get() = minuteOfDay % 60
+}
+
+/** 급식 알림 설정. 전체 스위치(enabled)가 켜져 있을 때 켜진 끼니마다 그 시간에 알린다. */
+data class NotificationSettings(val enabled: Boolean, val slots: List<MealAlarmSlot>) {
+
+    /** 알림을 보낼 시각들. 같은 시각인 끼니는 알림 하나로 묶는다. */
+    val activeMinutes: Set<Int>
+        get() = if (enabled) slots.filter { it.enabled }.map { it.minuteOfDay }.toSet() else emptySet()
+
+    /** 그 시각에 알려 줄 끼니 코드 */
+    fun codesAt(minuteOfDay: Int): Set<Int> =
+        slots.filter { it.enabled && it.minuteOfDay == minuteOfDay }.map { it.code }.toSet()
 
     companion object {
-        const val DEFAULT_MINUTE_OF_DAY = 7 * 60 + 30
+        val MEAL_CODES = listOf(1, 2, 3)
+
+        fun mealName(code: Int) = when (code) {
+            1 -> "조식"
+            3 -> "석식"
+            else -> "중식"
+        }
+
+        fun defaultMinute(code: Int) = when (code) {
+            1 -> 7 * 60
+            3 -> 17 * 60
+            else -> 11 * 60 + 30
+        }
     }
 }

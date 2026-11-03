@@ -1,6 +1,7 @@
 package com.geupsik.alimi.ui.meal
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +59,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.outlined.WbTwilight
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.ui.unit.Dp
+import com.geupsik.alimi.domain.MealDates
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -89,26 +98,33 @@ fun MealScreen(
     val school by vm.school.collectAsStateWithLifecycle()
     val weekLoads by vm.weekLoads.collectAsStateWithLifecycle()
     val allergies by vm.allergies.collectAsStateWithLifecycle()
+    val weeklyView by vm.weeklyView.collectAsStateWithLifecycle()
     val pager = rememberPagerState(initialPage = DAYS_EACH_SIDE) { PAGE_COUNT }
     val scope = rememberCoroutineScope()
+    var sheetDish by remember { mutableStateOf<Dish?>(null) }
 
     fun dateOf(page: Int): LocalDate = vm.baseDate.plusDays((page - DAYS_EACH_SIDE).toLong())
 
-    LaunchedEffect(pager) {
-        snapshotFlow { pager.settledPage }.collect { vm.onDateSelected(dateOf(it)) }
+    val today = LocalDate.now()
+    val currentDate = dateOf(pager.currentPage)
+    var weekStart by rememberSaveable { mutableStateOf(MealDates.weekStart(today)) }
+    val weekly = weeklyView == true
+
+    LaunchedEffect(pager, weekly) {
+        if (!weekly) snapshotFlow { pager.settledPage }.collect { vm.onDateSelected(dateOf(it)) }
+    }
+    LaunchedEffect(weekly, weekStart) {
+        if (weekly) vm.onDateSelected(weekStart)
     }
     LifecycleResumeEffect(Unit) {
         vm.onResume()
         onPauseOrDispose { }
     }
 
-    val currentDate = dateOf(pager.currentPage)
-    val today = LocalDate.now()
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(school?.name.orEmpty()) },
+                title = { Text(school?.name.orEmpty(), fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Outlined.Settings, contentDescription = "설정")
@@ -119,39 +135,82 @@ fun MealScreen(
         bottomBar = { AllergyDisclaimer() },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            DateBar(
-                date = currentDate,
-                isToday = currentDate == today,
-                onPrevious = { scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } },
-                onNext = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
-                onToday = {
-                    val todayPage = DAYS_EACH_SIDE + (today.toEpochDay() - vm.baseDate.toEpochDay()).toInt()
-                    scope.launch { pager.animateScrollToPage(todayPage.coerceIn(0, PAGE_COUNT - 1)) }
+            ViewModeSwitch(
+                weekly = weekly,
+                onChange = { toWeekly ->
+                    // 보고 있던 날짜를 이어서 보여준다
+                    if (toWeekly) weekStart = MealDates.weekStart(currentDate)
+                    vm.setWeeklyView(toWeekly)
                 },
             )
 
             val currentSchool = school
-            if (currentSchool == null) {
-                Box(Modifier.fillMaxSize())
-            } else {
-                HorizontalPager(
-                    state = pager,
-                    modifier = Modifier.fillMaxSize(),
-                    beyondViewportPageCount = 1,
-                    key = { it },
-                ) { page ->
-                    val date = dateOf(page)
-                    DayPage(
-                        school = currentSchool,
-                        date = date,
-                        load = weekLoads[MealViewModel.weekKey(currentSchool, date)],
-                        allergies = allergies,
-                        onOpenAllergy = onOpenAllergy,
-                        vm = vm,
+            when {
+                currentSchool == null || weeklyView == null -> Box(Modifier.fillMaxSize())
+
+                weekly -> WeekView(
+                    school = currentSchool,
+                    weekStart = weekStart,
+                    today = today,
+                    load = weekLoads[MealViewModel.weekKey(currentSchool, weekStart)],
+                    allergies = allergies,
+                    onWeekChange = { weekStart = it },
+                    onDishClick = { sheetDish = it },
+                    vm = vm,
+                )
+
+                else -> {
+                    DateBar(
+                        date = currentDate,
+                        isToday = currentDate == today,
+                        onPrevious = { scope.launch { pager.animateScrollToPage(pager.currentPage - 1) } },
+                        onNext = { scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
+                        onToday = {
+                            val todayPage = DAYS_EACH_SIDE + (today.toEpochDay() - vm.baseDate.toEpochDay()).toInt()
+                            scope.launch { pager.animateScrollToPage(todayPage.coerceIn(0, PAGE_COUNT - 1)) }
+                        },
                     )
+                    HorizontalPager(
+                        state = pager,
+                        modifier = Modifier.fillMaxSize(),
+                        beyondViewportPageCount = 1,
+                        key = { it },
+                    ) { page ->
+                        val date = dateOf(page)
+                        DayPage(
+                            school = currentSchool,
+                            date = date,
+                            load = weekLoads[MealViewModel.weekKey(currentSchool, date)],
+                            allergies = allergies,
+                            onOpenAllergy = onOpenAllergy,
+                            onDishClick = { sheetDish = it },
+                            vm = vm,
+                        )
+                    }
                 }
             }
         }
+    }
+
+    sheetDish?.let { DishSheet(it, allergies.orEmpty(), onDismiss = { sheetDish = null }) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ViewModeSwitch(weekly: Boolean, onChange: (Boolean) -> Unit) {
+    SingleChoiceSegmentedButtonRow(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        SegmentedButton(
+            selected = !weekly,
+            onClick = { onChange(false) },
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+        ) { Text("하루") }
+        SegmentedButton(
+            selected = weekly,
+            onClick = { onChange(true) },
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+        ) { Text("일주일") }
     }
 }
 
@@ -205,6 +264,7 @@ private fun DayPage(
     load: WeekLoad?,
     allergies: Set<Int>?,
     onOpenAllergy: () -> Unit,
+    onDishClick: (Dish) -> Unit,
     vm: MealViewModel,
 ) {
     val dayFlow = remember(school, date) { vm.observeDay(school, date) }
@@ -222,6 +282,7 @@ private fun DayPage(
             allergies = allergies,
             onRetry = { vm.refreshNow(date) },
             onOpenAllergy = onOpenAllergy,
+            onDishClick = onDishClick,
         )
     }
 }
@@ -233,6 +294,7 @@ private fun DayContent(
     allergies: Set<Int>?,
     onRetry: () -> Unit,
     onOpenAllergy: () -> Unit,
+    onDishClick: (Dish) -> Unit,
 ) {
     val failed = (load as? WeekLoad.Failed)?.error
     // 당겨서 새로고침이 되려면 내용이 비어 있어도 스크롤 가능한 목록이어야 한다
@@ -246,10 +308,11 @@ private fun DayContent(
 
             day.meals.isNotEmpty() -> {
                 if (failed != null) item { CacheNotice(failed) }
-                items(day.meals, key = { it.code }) { MealCard(it, allergies.orEmpty()) }
+                items(day.meals, key = { it.code }) { MealCard(it, allergies.orEmpty(), onDishClick) }
                 if (allergies != null && allergies.isEmpty()) {
                     item { AllergyHint(onOpenAllergy) }
                 }
+                item { TapHint() }
             }
 
             day.weekFetched -> {
@@ -282,91 +345,115 @@ private fun DayContent(
 }
 
 @Composable
-private fun MealCard(meal: Meal, allergies: Set<Int>) {
+private fun MealCard(meal: Meal, allergies: Set<Int>, onDishClick: (Dish) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Column(Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                MealIcon(meal.code)
+                Spacer(Modifier.width(12.dp))
                 Text(
                     meal.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
                 )
                 meal.calories?.let {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                        Text(
+                            it.replace(" Kcal", " kcal"),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                meal.dishes.forEach { DishRow(it, Allergy.matched(it, allergies)) }
-            }
+            Spacer(Modifier.height(12.dp))
+            meal.dishes.forEach { DishRow(it, Allergy.matched(it, allergies), onClick = { onDishClick(it) }) }
         }
     }
 }
 
-/** 내 알레르기가 든 메뉴는 빨간색 + 경고 아이콘. 누르면 어떤 알레르기 때문인지 펼쳐 보여준다. */
+/** 조식·중식·석식을 해 모양 아이콘으로 구분한다 */
 @Composable
-private fun DishRow(dish: Dish, matched: Set<Int>) {
-    if (matched.isEmpty()) {
-        Text(
-            dish.name,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(vertical = 4.dp),
-        )
-        return
+fun MealIcon(code: Int, size: Dp = 36.dp) {
+    val icon = when (code) {
+        1 -> Icons.Outlined.WbTwilight
+        3 -> Icons.Outlined.Bedtime
+        else -> Icons.Outlined.WbSunny
     }
+    Box(
+        Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(size * 0.55f),
+        )
+    }
+}
 
-    var expanded by rememberSaveable(dish.name) { mutableStateOf(false) }
-    val red = MaterialTheme.colorScheme.error
-    val names = Allergy.names(matched)
-    Column(
+/** 메뉴 한 줄. 내 알레르기가 든 메뉴는 빨간색 + 경고 아이콘. 누르면 사진·알레르기 정보 창을 연다. */
+@Composable
+private fun DishRow(dish: Dish, matched: Set<Int>, onClick: () -> Unit) {
+    val warn = matched.isNotEmpty()
+    val color = if (warn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    Row(
         Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
-            .clickable(onClickLabel = if (expanded) "알레르기 정보 접기" else "알레르기 정보 보기") {
-                expanded = !expanded
+            .clickable(onClickLabel = "사진과 알레르기 정보 보기", onClick = onClick)
+            .semantics(mergeDescendants = true) {
+                if (warn) contentDescription = "${dish.name}, ${Allergy.names(matched)} 포함"
             }
-            .semantics(mergeDescendants = true) { contentDescription = "${dish.name}, $names 포함" }
-            .padding(vertical = 4.dp),
+            .padding(vertical = 7.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                dish.name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = red,
-            )
+        Box(
+            Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(if (warn) color else MaterialTheme.colorScheme.outlineVariant),
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            dish.name,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = if (warn) FontWeight.SemiBold else FontWeight.Normal,
+            color = color,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        if (warn) {
             Spacer(Modifier.width(6.dp))
-            Icon(
-                Icons.Outlined.WarningAmber,
-                contentDescription = null,
-                tint = red,
-                modifier = Modifier.size(18.dp),
+            Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(
+                Allergy.names(matched),
+                style = MaterialTheme.typography.labelMedium,
+                color = color,
             )
-        }
-        AnimatedVisibility(visible = expanded) {
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.errorContainer,
-                modifier = Modifier.padding(top = 4.dp),
-            ) {
-                Text(
-                    "$names 포함",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                )
-            }
         }
     }
+}
+
+@Composable
+private fun TapHint() {
+    Text(
+        "메뉴를 누르면 사진과 알레르기 정보를 볼 수 있어요.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.outline,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+    )
 }
 
 /** 알레르기를 아직 등록하지 않았을 때 급식 목록 아래에 보여주는 안내 */
@@ -394,7 +481,7 @@ private fun AllergyHint(onOpenAllergy: () -> Unit) {
 
 /** 캐시를 보여주는 중인데 새로 받아 오기는 실패했을 때 위에 띄우는 띠 */
 @Composable
-private fun CacheNotice(error: AppError) {
+fun CacheNotice(error: AppError) {
     val text = if (error == AppError.Network) {
         "인터넷에 연결되어 있지 않아 저장된 메뉴를 보여주고 있어요."
     } else {
@@ -423,7 +510,7 @@ private fun CacheNotice(error: AppError) {
 }
 
 @Composable
-private fun CenterMessage(
+fun CenterMessage(
     icon: @Composable () -> Unit,
     title: String,
     body: String,

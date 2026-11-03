@@ -23,6 +23,12 @@ object MenuParser {
      */
     private val TRAILING_NUMBERS = Regex("""(?<![\d.])(\d{1,2}(?:\.\d{1,2})*)\.\s*$""")
 
+    /**
+     * 학교가 메뉴 이름 끝에 붙이는 표시. 예) "쌀밥1k", "토스트바/우유1kk", "등뼈감자탕k*", "보리밥1"
+     * 한글이나 닫는 괄호 바로 뒤에 붙은 것만 지워서 "우유200", "Pork" 같은 이름은 건드리지 않는다.
+     */
+    private val TRAILING_MARKS = Regex("""(?<=[가-힣)])\d?(?:[kK*#&@+]+\d?)*$""")
+
     fun parse(raw: String): List<Dish> =
         raw.split(LINE_BREAK)
             .map { it.trim() }
@@ -33,7 +39,7 @@ object MenuParser {
     fun parseDish(line: String): Dish {
         val text = line.trim()
         val match = PAREN_NUMBERS.find(text) ?: TRAILING_NUMBERS.find(text)
-            ?: return Dish(text, emptySet())
+            ?: return Dish(stripMarks(text), emptySet())
 
         val numbers = match.groupValues[1]
             .split('.')
@@ -41,6 +47,8 @@ object MenuParser {
             .filter { it in Allergy.NUMBER_RANGE }
             .toSet()
         val name = text.removeRange(match.range).trim()
-        return Dish(name, numbers)
+        return Dish(stripMarks(name), numbers)
     }
+
+    private fun stripMarks(name: String): String = name.replace(TRAILING_MARKS, "").trim()
 }

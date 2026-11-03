@@ -6,27 +6,28 @@ import android.content.Context
 import android.content.Intent
 import com.geupsik.alimi.data.prefs.NotificationSettings
 
-/** 매일 급식 알림용 알람을 걸고 끈다. 알람은 하나만 쓰고, 새로 걸면 이전 것이 바뀐다. */
+/**
+ * 급식 알림용 알람을 걸고 끈다. 알람은 하나만 쓰고, 새로 걸면 이전 것이 바뀐다.
+ * 끼니마다 시간이 달라도 늘 "다음으로 가장 가까운 시각" 하나를 향해 건다.
+ */
 class MealAlarmScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(AlarmManager::class.java)
 
     /** 설정에 맞게 다시 건다. 꺼져 있으면 취소한다. */
     fun apply(settings: NotificationSettings, nowMillis: Long = System.currentTimeMillis()) {
-        if (!settings.enabled) {
-            cancel()
-            return
-        }
-        scheduleToward(AlarmPlan.nextTarget(nowMillis, settings.minuteOfDay), nowMillis)
+        val target = AlarmPlan.nextTarget(nowMillis, settings.activeMinutes) ?: return cancel()
+        scheduleToward(target, nowMillis)
     }
 
     /**
-     * 방금 알림을 보낸 뒤 다음 날 알람을 건다.
+     * 방금 알림을 보낸 뒤 다음 알람을 건다.
      * 알람은 30초까지 일찍 깨어날 수 있어서, now가 아니라 목표 시각 이후로 계산해야 같은 날 두 번 울리지 않는다.
      */
     fun scheduleAfterDelivery(settings: NotificationSettings, deliveredTarget: Long, nowMillis: Long) {
         val after = maxOf(nowMillis, deliveredTarget) + 1_000
-        scheduleToward(AlarmPlan.nextTarget(after, settings.minuteOfDay), nowMillis)
+        val target = AlarmPlan.nextTarget(after, settings.activeMinutes) ?: return cancel()
+        scheduleToward(target, nowMillis)
     }
 
     /** 목표 시각을 향해 다음 단계 알람을 건다. */

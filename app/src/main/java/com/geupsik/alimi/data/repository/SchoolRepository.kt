@@ -5,6 +5,7 @@ import com.geupsik.alimi.data.prefs.UserPrefs
 import com.geupsik.alimi.data.remote.NeisApi
 import com.geupsik.alimi.data.remote.NeisParser
 import com.geupsik.alimi.data.remote.SchoolRow
+import com.geupsik.alimi.domain.SchoolQuery
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
@@ -21,8 +22,20 @@ class SchoolRepository(
 
     val selectedSchool: Flow<School?> = prefs.school
 
-    /** 실패하면 예외를 던진다. 호출하는 쪽에서 toAppError()로 바꿔서 보여준다. */
+    /**
+     * 검색어 그대로 찾아보고, 없으면 줄임말을 푼 이름(경기과고 → 경기과학고)으로 한 번 더 찾는다.
+     * 실패하면 예외를 던진다. 호출하는 쪽에서 toAppError()로 바꿔서 보여준다.
+     */
     suspend fun search(name: String): SchoolSearchResult {
+        var result = SchoolSearchResult(emptyList(), 0)
+        for (candidate in SchoolQuery.candidates(name)) {
+            result = searchExact(candidate)
+            if (result.schools.isNotEmpty()) break
+        }
+        return result
+    }
+
+    private suspend fun searchExact(name: String): SchoolSearchResult {
         val response = api.schoolInfo(key = apiKey.ifBlank { null }, schoolName = name)
         val page = NeisParser.parse(response, "schoolInfo", SchoolRow.serializer(), json)
         // 나이스에는 학교 코드가 빈칸인 시험용 항목(예: AIDT고등학교)이 섞여 있다.

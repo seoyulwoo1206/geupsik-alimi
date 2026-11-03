@@ -57,4 +57,21 @@ class MealNotificationTextTest {
         assertTrue(text!!.summary.contains("불러오지 못했어요"))
         assertNull(MealNotificationText.build(saturday, null, emptySet()))
     }
+
+    @Test
+    fun `끼니 하나만 고르면 그 끼니만 알리고 제목에 이름을 쓴다`() {
+        val breakfast = Meal(1, "조식", listOf(Dish("토스트", setOf(1, 2))), null)
+        val day = DayMeals(listOf(breakfast, lunch), true)
+        val text = MealNotificationText.build(thursday, day, emptySet(), mealCodes = setOf(1))!!
+        assertEquals("오늘의 조식 · 10월 22일 (목)", text.title)
+        assertEquals("[조식] 토스트", text.body)
+        // 그날 없는 끼니(석식)는 보내지 않는다
+        assertNull(MealNotificationText.build(thursday, day, emptySet(), mealCodes = setOf(3)))
+    }
+
+    @Test
+    fun `못 받아 온 날 실패 안내는 하루 첫 알림에서만`() {
+        val notFetched = DayMeals(emptyList(), false)
+        assertNull(MealNotificationText.build(thursday, notFetched, emptySet(), setOf(2), reportFailure = false))
+    }
 }

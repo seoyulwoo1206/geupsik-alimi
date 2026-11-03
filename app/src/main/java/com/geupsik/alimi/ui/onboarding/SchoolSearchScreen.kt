@@ -29,6 +29,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -107,7 +108,7 @@ fun SchoolSearchScreen(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "학교 이름 일부만 입력해도 돼요. 예) 서울고, 한빛중",
+                    "이름을 입력하면 아래에 바로 찾아 줘요. 예) 서울고, 한빛중, 경기과고",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -146,10 +147,15 @@ fun SchoolSearchScreen(
             }
 
             Spacer(Modifier.height(8.dp))
+            // 진행 막대 자리를 늘 비워 둬서 찾는 동안 목록이 위아래로 흔들리지 않게 한다
+            Box(Modifier.fillMaxWidth().height(4.dp)) {
+                if (state.loading && state.result != SearchResultState.Idle) {
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                }
+            }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (val result = state.result) {
-                    SearchResultState.Idle -> Unit
-                    SearchResultState.Loading -> CenterBox { CircularProgressIndicator() }
+                    SearchResultState.Idle -> if (state.loading) CenterBox { CircularProgressIndicator() }
                     SearchResultState.Empty -> CenterBox {
                         Message("검색 결과가 없어요.\n학교 이름을 다시 확인해 주세요.")
                     }

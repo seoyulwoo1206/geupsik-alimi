@@ -39,6 +39,16 @@ object AlarmPlan {
         return target.toInstant().toEpochMilli()
     }
 
+    /** 여러 시각 중 now 이후 가장 먼저 오는 것. 시각이 하나도 없으면 null */
+    fun nextTarget(nowMillis: Long, minutesOfDay: Collection<Int>, zone: ZoneId = ZoneId.systemDefault()): Long? =
+        minutesOfDay.minOfOrNull { nextTarget(nowMillis, it, zone) }
+
+    /** 알람 목표 시각이 하루 중 몇 분째인지. 어느 끼니 알림인지 찾는 데 쓴다. */
+    fun minuteOfDay(millis: Long, zone: ZoneId = ZoneId.systemDefault()): Int {
+        val time = ZonedDateTime.ofInstant(Instant.ofEpochMilli(millis), zone)
+        return time.hour * 60 + time.minute
+    }
+
     /** 다음으로 알람을 걸 시각 */
     fun nextTrigger(nowMillis: Long, targetMillis: Long): Long {
         val remaining = targetMillis - nowMillis

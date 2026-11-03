@@ -73,9 +73,16 @@ class SettingsViewModel(
         }
     }
 
-    fun setTime(hour: Int, minute: Int) {
+    fun setMealEnabled(code: Int, enabled: Boolean) {
         viewModelScope.launch {
-            userPrefs.setNotificationTime(hour * 60 + minute)
+            userPrefs.setMealAlarmEnabled(code, enabled)
+            scheduler.apply(userPrefs.notification.first())
+        }
+    }
+
+    fun setMealTime(code: Int, hour: Int, minute: Int) {
+        viewModelScope.launch {
+            userPrefs.setMealAlarmTime(code, hour * 60 + minute)
             scheduler.apply(userPrefs.notification.first())
         }
     }

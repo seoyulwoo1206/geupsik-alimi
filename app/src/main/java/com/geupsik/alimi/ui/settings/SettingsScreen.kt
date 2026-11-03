@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.NotificationsOff
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.SystemUpdate
@@ -52,7 +51,9 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.geupsik.alimi.BuildConfig
+import com.geupsik.alimi.data.prefs.MealAlarmSlot
 import com.geupsik.alimi.data.prefs.NotificationSettings
+import com.geupsik.alimi.ui.meal.MealIcon
 import com.geupsik.alimi.domain.Allergy
 import com.geupsik.alimi.ui.components.UpdateDialog
 import com.geupsik.alimi.update.ManualCheckResult
@@ -87,7 +88,8 @@ fun SettingsScreen(
         onPauseOrDispose { }
     }
 
-    var showTimePicker by rememberSaveable { mutableStateOf(false) }
+    /** 시간을 고르고 있는 끼니 코드. null이면 시간 선택 창이 닫혀 있다. */
+    var pickingMealCode by rememberSaveable { mutableStateOf<Int?>(null) }
     var showPermissionDialog by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -131,14 +133,15 @@ fun SettingsScreen(
     }
 
     val current = notification
-    if (showTimePicker && current != null) {
+    val pickingSlot = current?.slots?.firstOrNull { it.code == pickingMealCode }
+    if (pickingSlot != null) {
         TimePickerDialog(
-            initial = current,
+            slot = pickingSlot,
             onConfirm = { h, m ->
-                showTimePicker = false
-                vm.setTime(h, m)
+                pickingMealCode = null
+                vm.setMealTime(pickingSlot.code, h, m)
             },
-            onDismiss = { showTimePicker = false },
+            onDismiss = { pickingMealCode = null },
         )
     }
 
@@ -192,8 +195,8 @@ fun SettingsScreen(
                 ListItem(
                     modifier = Modifier.clickable { if (enabled) vm.setEnabled(false) else turnOn() },
                     leadingContent = { Icon(Icons.Outlined.NotificationsActive, contentDescription = null) },
-                    headlineContent = { Text("매일 급식 알림") },
-                    supportingContent = { Text("정한 시간에 오늘 메뉴를 알려 줘요. 몇 분 늦게 올 수 있어요.") },
+                    headlineContent = { Text("급식 알림") },
+                    supportingContent = { Text("끼니마다 정한 시간에 메뉴를 알려 줘요. 몇 분 늦게 올 수 있어요.") },
                     trailingContent = {
                         Switch(
                             checked = enabled,
@@ -201,13 +204,25 @@ fun SettingsScreen(
                         )
                     },
                 )
-                ListItem(
-                    modifier = Modifier.clickable(enabled = enabled) { showTimePicker = true },
-                    leadingContent = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
-                    headlineContent = { Text("알림 시간") },
-                    supportingContent = { Text(formatTime(current)) },
-                    colors = if (enabled) ListItemDefaults.colors() else disabledColors(),
-                )
+                current.slots.forEach { slot ->
+                    val name = NotificationSettings.mealName(slot.code)
+                    ListItem(
+                        modifier = Modifier.clickable(enabled = enabled) { pickingMealCode = slot.code },
+                        leadingContent = { MealIcon(slot.code, size = 28.dp) },
+                        headlineContent = { Text("$name 알림") },
+                        supportingContent = {
+                            Text(if (slot.enabled) formatTime(slot) + " · 눌러서 시간 바꾸기" else "받지 않음")
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = slot.enabled,
+                                enabled = enabled,
+                                onCheckedChange = { vm.setMealEnabled(slot.code, it) },
+                            )
+                        },
+                        colors = if (enabled) ListItemDefaults.colors() else disabledColors(),
+                    )
+                }
                 if (enabled && !canNotify) {
                     ListItem(
                         modifier = Modifier.clickable { turnOn() },
@@ -259,18 +274,18 @@ fun SettingsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TimePickerDialog(
-    initial: NotificationSettings,
+    slot: MealAlarmSlot,
     onConfirm: (hour: Int, minute: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val state = rememberTimePickerState(
-        initialHour = initial.hour,
-        initialMinute = initial.minute,
+        initialHour = slot.hour,
+        initialMinute = slot.minute,
         is24Hour = false,
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("알림 시간") },
+        title = { Text("${NotificationSettings.mealName(slot.code)} 알림 시간") },
         text = { TimePicker(state = state) },
         confirmButton = { TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text("확인") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
@@ -293,10 +308,10 @@ private fun updateStatusText(checking: Boolean, result: ManualCheckResult?): Str
     else -> "눌러서 새 버전이 있는지 확인해요."
 }
 
-private fun formatTime(settings: NotificationSettings): String {
-    val ampm = if (settings.hour < 12) "오전" else "오후"
-    val hour12 = (settings.hour % 12).let { if (it == 0) 12 else it }
-    return "%s %d:%02d".format(ampm, hour12, settings.minute)
+private fun formatTime(slot: MealAlarmSlot): String {
+    val ampm = if (slot.hour < 12) "오전" else "오후"
+    val hour12 = (slot.hour % 12).let { if (it == 0) 12 else it }
+    return "%s %d:%02d".format(ampm, hour12, slot.minute)
 }
 
 @Composable
