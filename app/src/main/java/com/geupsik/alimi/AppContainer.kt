@@ -10,6 +10,7 @@ import com.geupsik.alimi.notification.DailyMealNotification
 import com.geupsik.alimi.notification.MealAlarmScheduler
 import com.geupsik.alimi.notification.MealNotifier
 import com.geupsik.alimi.update.GitHubApi
+import com.geupsik.alimi.update.ApkInstaller
 import com.geupsik.alimi.update.UpdateChecker
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -58,6 +59,8 @@ class AppContainer(context: Context) {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(GitHubApi::class.java)
+
+    val apkInstaller = ApkInstaller(context, okHttp)
 
     val updateChecker = UpdateChecker(
         api = gitHubApi,

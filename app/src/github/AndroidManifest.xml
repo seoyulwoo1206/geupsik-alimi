@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- github 빌드에만 들어가는 설정. 플레이스토어는 스스로 업데이트하므로 play 빌드에는 넣지 않는다. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 업데이트 팝업에서 받은 새 버전 APK의 설치 화면을 띄우기 위해 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application>
+        <!-- 받은 APK를 설치 화면에 넘겨주는 통로 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
+    </application>
+
+</manifest>

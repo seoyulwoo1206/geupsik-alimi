@@ -54,6 +54,10 @@ class MenuParserTest {
         assertEquals(Dish("에그인헬스테이크", setOf(1, 2)), MenuParser.parseDish("에그인헬스테이크k1 (1.2)"))
         assertEquals(Dish("등뼈감자탕", setOf(5, 6)), MenuParser.parseDish("등뼈감자탕k* (5.6)"))
         assertEquals(Dish("깍두기", setOf(9)), MenuParser.parseDish("깍두기1 (9)"))
+        assertEquals(
+            Dish("토스트바(식빵,호밀빵)/우유", setOf(1, 2)),
+            MenuParser.parseDish("토스트바(식빵,호밀빵)/우유1k- (1.2)"),
+        )
         assertEquals(Dish("맑은순두부탕(양념장)", setOf(5)), MenuParser.parseDish("맑은순두부탕(양념장)1k (5)"))
         assertEquals(Dish("Pork", emptySet()), MenuParser.parseDish("Pork"))
     }

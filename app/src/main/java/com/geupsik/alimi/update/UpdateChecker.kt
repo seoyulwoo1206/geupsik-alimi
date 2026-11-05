@@ -108,7 +108,7 @@ class UpdateChecker(
         return UpdateInfo(
             tag = tagName,
             currentVersion = currentVersion,
-            notes = body?.trim()?.takeIf { it.isNotEmpty() }?.take(MAX_NOTES_LENGTH),
+            notes = body?.let(ReleaseNotes::clean)?.takeIf { it.isNotEmpty() }?.take(MAX_NOTES_LENGTH),
             downloadUrl = apk?.downloadUrl ?: htmlUrl,
         )
     }

@@ -7,33 +7,38 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+// 로고에 맞춘 색: 버튼·글자는 확성기의 주황, 강조 배경은 로고 바탕의 노랑, 화면 바탕은 따뜻한 크림색
 private val LightColors = lightColorScheme(
     primary = Color(0xFFC2541B),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFDBCB),
-    onPrimaryContainer = Color(0xFF3A1100),
-    secondary = Color(0xFF77574A),
-    secondaryContainer = Color(0xFFFFDBCE),
-    onSecondaryContainer = Color(0xFF2C160C),
-    background = Color(0xFFFFFBF5),
-    surface = Color(0xFFFFFBF5),
-    surfaceContainer = Color(0xFFF7EEE8),
-    surfaceContainerHigh = Color(0xFFF1E7E1),
+    primaryContainer = Color(0xFFFFE08A),
+    onPrimaryContainer = Color(0xFF3D2B00),
+    secondary = Color(0xFF6E5B2E),
+    secondaryContainer = Color(0xFFFBE7B5),
+    onSecondaryContainer = Color(0xFF2A1F00),
+    background = Color(0xFFFFFCF3),
+    surface = Color(0xFFFFFCF3),
+    surfaceContainerLow = Color(0xFFFDF7E8),
+    surfaceContainer = Color(0xFFFAF2DF),
+    surfaceContainerHigh = Color(0xFFF4EAD3),
+    surfaceContainerHighest = Color(0xFFEEE3CA),
     error = Color(0xFFBA1A1A),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFFFB693),
-    onPrimary = Color(0xFF5C1A00),
-    primaryContainer = Color(0xFF7F2C00),
-    onPrimaryContainer = Color(0xFFFFDBCB),
-    secondary = Color(0xFFE7BEAD),
-    secondaryContainer = Color(0xFF5D4034),
-    onSecondaryContainer = Color(0xFFFFDBCE),
-    background = Color(0xFF1C1B1A),
-    surface = Color(0xFF1C1B1A),
-    surfaceContainer = Color(0xFF272321),
-    surfaceContainerHigh = Color(0xFF322D2B),
+    primary = Color(0xFFFFB68A),
+    onPrimary = Color(0xFF522300),
+    primaryContainer = Color(0xFF5C4300),
+    onPrimaryContainer = Color(0xFFFFE08A),
+    secondary = Color(0xFFDCC48C),
+    secondaryContainer = Color(0xFF54452A),
+    onSecondaryContainer = Color(0xFFFBE7B5),
+    background = Color(0xFF1C1A15),
+    surface = Color(0xFF1C1A15),
+    surfaceContainerLow = Color(0xFF221F18),
+    surfaceContainer = Color(0xFF27241C),
+    surfaceContainerHigh = Color(0xFF322E25),
+    surfaceContainerHighest = Color(0xFF3D392F),
     error = Color(0xFFFFB4AB),
 )
 
