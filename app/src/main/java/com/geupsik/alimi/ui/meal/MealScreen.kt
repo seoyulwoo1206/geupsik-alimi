@@ -411,14 +411,15 @@ private fun DishRow(dish: Dish, matched: Set<Int>, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(DISH_EMOJI_WIDTH), contentAlignment = Alignment.Center) {
-            Text(DishEmoji.of(dish.name), fontSize = 20.sp)
+            Text(DishEmoji.of(dish.name), fontSize = 18.sp)
         }
         Spacer(Modifier.width(10.dp))
         Text(
             dish.name,
             fontSize = 17.sp,
             lineHeight = 24.sp,
-            fontWeight = if (warn) FontWeight.Bold else FontWeight.Medium,
+            // 굵기는 그대로 두고 색만 바꿔서, 알레르기 메뉴가 많은 날에도 화면이 시끄럽지 않게 한다
+            fontWeight = FontWeight.Medium,
             color = if (warn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )

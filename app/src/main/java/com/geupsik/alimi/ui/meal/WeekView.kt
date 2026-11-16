@@ -1,5 +1,6 @@
 package com.geupsik.alimi.ui.meal
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import com.geupsik.alimi.domain.DishEmoji
 import androidx.compose.material3.Surface
@@ -179,10 +180,9 @@ private fun DayBlock(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isToday) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceContainer,
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        // 오늘은 카드 전체를 칠하지 않고 주황 테두리만 둘러서 눈이 덜 피곤하게 한다
+        border = if (isToday) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
     ) {
         Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -250,12 +250,12 @@ private fun CompactMeal(meal: Meal, allergies: Set<Int>, onDishClick: (Dish) -> 
                 Surface(
                     modifier = Modifier.clip(CircleShape).clickable { onDishClick(dish) },
                     shape = CircleShape,
-                    color = if (warn) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = if (warn) BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)) else null,
                 ) {
                     Text(
                         "${DishEmoji.of(dish.name)} ${dish.name}",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (warn) FontWeight.Bold else FontWeight.Medium,
                         color = if (warn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     )

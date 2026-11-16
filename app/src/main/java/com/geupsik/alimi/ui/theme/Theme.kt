@@ -7,22 +7,28 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// 로고에 맞춘 색: 버튼·글자는 확성기의 주황, 강조 배경은 로고 바탕의 노랑, 화면 바탕은 따뜻한 크림색
+// 흰 바탕 + 연회색 카드로 눈이 편하게 하고, 로고의 노랑·주황은 강조할 곳(선택된 버튼, 오늘 표시)에만 쓴다
 private val LightColors = lightColorScheme(
     primary = Color(0xFFC2541B),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFE08A),
+    primaryContainer = Color(0xFFFFE9A8),
     onPrimaryContainer = Color(0xFF3D2B00),
     secondary = Color(0xFF6E5B2E),
-    secondaryContainer = Color(0xFFFBE7B5),
+    secondaryContainer = Color(0xFFFFF0C4),
     onSecondaryContainer = Color(0xFF2A1F00),
-    background = Color(0xFFFFFCF3),
-    surface = Color(0xFFFFFCF3),
-    surfaceContainerLow = Color(0xFFFDF7E8),
-    surfaceContainer = Color(0xFFFAF2DF),
-    surfaceContainerHigh = Color(0xFFF4EAD3),
-    surfaceContainerHighest = Color(0xFFEEE3CA),
-    error = Color(0xFFBA1A1A),
+    background = Color.White,
+    surface = Color.White,
+    onSurface = Color(0xFF1F1F22),
+    onSurfaceVariant = Color(0xFF5F5E66),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFFAFAFB),
+    surfaceContainer = Color(0xFFF4F4F6),
+    surfaceContainerHigh = Color(0xFFEDEDF0),
+    surfaceContainerHighest = Color(0xFFE6E6EA),
+    outlineVariant = Color(0xFFDEDDE3),
+    error = Color(0xFFC62828),
+    errorContainer = Color(0xFFFDECEC),
+    onErrorContainer = Color(0xFF8C1D18),
 )
 
 private val DarkColors = darkColorScheme(
