@@ -1,6 +1,11 @@
 package com.geupsik.alimi.ui.meal
 
 import androidx.compose.foundation.clickable
+import com.geupsik.alimi.domain.DishEmoji
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -132,7 +137,15 @@ private fun WeekBar(
             )
             Box(Modifier.height(32.dp), contentAlignment = Alignment.Center) {
                 if (isThisWeek) {
-                    Text("이번 주", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                        Text(
+                            "이번 주",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp),
+                        )
+                    }
                 } else {
                     TextButton(onClick = onThisWeek, contentPadding = PaddingValues(horizontal = 12.dp)) {
                         Text("이번 주로 돌아가기")
@@ -165,33 +178,46 @@ private fun DayBlock(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isToday) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceContainer,
         ),
     ) {
         Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
-            Row(verticalAlignment = Alignment.Bottom) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // 요일 첫 글자를 동그라미에 넣는다. 오늘은 주황 동그라미.
+                Box(
+                    Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (isToday) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
                 Text(
-                    date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.KOREAN),
+                    date.format(MONTH_DAY),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    date.format(MONTH_DAY),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 if (isToday) {
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        "오늘",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
+                        Text(
+                            "오늘",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -206,36 +232,33 @@ private fun DayBlock(
     }
 }
 
-/** 주간 보기용 끼니 한 줄: 아이콘 + 메뉴들을 가운뎃점으로 이어서 줄바꿈 */
+/** 주간 보기용 끼니 한 줄: 끼니 이모지 + 메뉴 칩들. 칩 단위로 줄을 바꿔서 메뉴 이름이 중간에 잘리지 않는다. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CompactMeal(meal: Meal, allergies: Set<Int>, onDishClick: (Dish) -> Unit) {
-    Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.Top) {
-        MealIcon(meal.code, size = 24.dp)
+    Row(Modifier.padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
+        MealIcon(meal.code, size = 30.dp)
         Spacer(Modifier.width(10.dp))
-        FlowRow(Modifier.weight(1f)) {
-            meal.dishes.forEachIndexed { index, dish ->
-                // 가운뎃점을 메뉴 뒤에 붙여 둬서 줄이 바뀔 때 점이 줄 맨 앞에 오지 않게 한다
-                Row {
-                    val warn = Allergy.matched(dish, allergies).isNotEmpty()
+        FlowRow(
+            Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            meal.dishes.forEach { dish ->
+                val warn = Allergy.matched(dish, allergies).isNotEmpty()
+                // onClick을 넘기면 최소 터치 크기(48dp) 때문에 줄 간격이 벌어져서, 누르기는 modifier로 붙인다
+                Surface(
+                    modifier = Modifier.clip(CircleShape).clickable { onDishClick(dish) },
+                    shape = CircleShape,
+                    color = if (warn) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface,
+                ) {
                     Text(
-                        dish.name,
+                        "${DishEmoji.of(dish.name)} ${dish.name}",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (warn) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (warn) FontWeight.Bold else FontWeight.Medium,
                         color = if (warn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.extraSmall)
-                            .clickable { onDishClick(dish) }
-                            .padding(vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     )
-                    if (index < meal.dishes.lastIndex) {
-                        Text(
-                            " · ",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.padding(vertical = 2.dp),
-                        )
-                    }
                 }
             }
         }

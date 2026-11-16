@@ -64,6 +64,11 @@ logo = im.resize((470, 470), Image.LANCZOS)
 icon.alpha_composite(logo, (21, 21))
 icon.convert('RGB').save(os.path.join(store, 'icon-512.png'), optimize=True)
 
+# 4) 앱 화면(상단 바, 빈 화면 안내)에 쓰는 마스코트 그림. 배경은 투명.
+mascot_dir = os.path.join(res, 'drawable-nodpi')
+os.makedirs(mascot_dir, exist_ok=True)
+im.resize((360, 360), Image.LANCZOS).save(os.path.join(mascot_dir, 'mascot.png'), optimize=True)
+
 # 미리보기: 원형으로 잘린 런처 아이콘 모습
 prev = Image.new('RGBA', (432, 432), YELLOW)
 fg = Image.open(os.path.join(res, 'mipmap-xxxhdpi', 'ic_launcher_foreground.png'))

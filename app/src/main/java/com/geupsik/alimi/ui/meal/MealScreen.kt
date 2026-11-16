@@ -1,7 +1,10 @@
 package com.geupsik.alimi.ui.meal
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,13 +26,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.NoMeals
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -59,13 +62,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.outlined.Bedtime
-import androidx.compose.material.icons.outlined.WbSunny
-import androidx.compose.material.icons.outlined.WbTwilight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.painterResource
+import com.geupsik.alimi.R
+import com.geupsik.alimi.domain.DishEmoji
+import java.time.LocalTime
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.ui.unit.Dp
 import com.geupsik.alimi.domain.MealDates
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -124,7 +128,7 @@ fun MealScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(school?.name.orEmpty(), fontWeight = FontWeight.Bold) },
+                title = { TopTitle(school?.name.orEmpty()) },
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Outlined.Settings, contentDescription = "설정")
@@ -238,11 +242,7 @@ private fun DateBar(
             // "오늘" 표시와 버튼 자리를 같은 높이로 맞춰서 날짜를 넘길 때 화면이 들썩이지 않게 한다
             Box(Modifier.height(32.dp), contentAlignment = Alignment.Center) {
                 if (isToday) {
-                    Text(
-                        "오늘",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    TodayBadge()
                 } else {
                     TextButton(onClick = onToday, contentPadding = PaddingValues(horizontal = 12.dp)) {
                         Text("오늘로 돌아가기")
@@ -319,7 +319,7 @@ private fun DayContent(
                 if (failed != null) item { CacheNotice(failed) }
                 item {
                     CenterMessage(
-                        icon = { Icon(Icons.Outlined.NoMeals, contentDescription = null, Modifier.size(48.dp)) },
+                        icon = { Mascot(Modifier.size(120.dp)) },
                         title = "급식 정보가 없어요",
                         body = "주말·방학·공휴일처럼 급식이 없는 날일 수 있어요.",
                     )
@@ -348,100 +348,163 @@ private fun DayContent(
 private fun MealCard(meal: Meal, allergies: Set<Int>, onDishClick: (Dish) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
+        Column(Modifier.padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 MealIcon(meal.code)
                 Spacer(Modifier.width(12.dp))
                 Text(
                     meal.name,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     modifier = Modifier.weight(1f),
                 )
                 meal.calories?.let {
-                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Surface(shape = CircleShape, color = MealStyle.tint(meal.code)) {
                         Text(
                             it.replace(" Kcal", " kcal"),
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         )
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            meal.dishes.forEach { DishRow(it, Allergy.matched(it, allergies), onClick = { onDishClick(it) }) }
+            Spacer(Modifier.height(10.dp))
+            meal.dishes.forEachIndexed { index, dish ->
+                if (index > 0) {
+                    // 이모지 칸 다음부터 그어서 메뉴 이름 줄이 반듯하게 보이게 한다
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = DISH_TEXT_START),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
+                }
+                DishRow(dish, Allergy.matched(dish, allergies), onClick = { onDishClick(dish) })
+            }
         }
     }
 }
 
-/** 조식·중식·석식을 해 모양 아이콘으로 구분한다 */
-@Composable
-fun MealIcon(code: Int, size: Dp = 36.dp) {
-    val icon = when (code) {
-        1 -> Icons.Outlined.WbTwilight
-        3 -> Icons.Outlined.Bedtime
-        else -> Icons.Outlined.WbSunny
-    }
-    Box(
-        Modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.size(size * 0.55f),
-        )
-    }
-}
+/** 이모지 칸 너비 + 간격. 모든 메뉴 이름이 이 위치에서 시작한다. */
+private val DISH_EMOJI_WIDTH = 32.dp
+private val DISH_TEXT_START = DISH_EMOJI_WIDTH + 10.dp
 
-/** 메뉴 한 줄. 내 알레르기가 든 메뉴는 빨간색 + 경고 아이콘. 누르면 사진·알레르기 정보 창을 연다. */
+/**
+ * 메뉴 한 줄: [음식 이모지] [메뉴 이름] [내 알레르기 배지].
+ * 이름이 길면 이름 칸 안에서 줄을 바꿔서 왼쪽 줄이 흐트러지지 않는다.
+ * 누르면 사진·알레르기 정보 창을 연다.
+ */
 @Composable
 private fun DishRow(dish: Dish, matched: Set<Int>, onClick: () -> Unit) {
     val warn = matched.isNotEmpty()
-    val color = if (warn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.small)
+            .clip(MaterialTheme.shapes.medium)
             .clickable(onClickLabel = "사진과 알레르기 정보 보기", onClick = onClick)
             .semantics(mergeDescendants = true) {
                 if (warn) contentDescription = "${dish.name}, ${Allergy.names(matched)} 포함"
             }
-            .padding(vertical = 7.dp, horizontal = 4.dp),
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(if (warn) color else MaterialTheme.colorScheme.outlineVariant),
-        )
-        Spacer(Modifier.width(12.dp))
+        Box(Modifier.width(DISH_EMOJI_WIDTH), contentAlignment = Alignment.Center) {
+            Text(DishEmoji.of(dish.name), fontSize = 20.sp)
+        }
+        Spacer(Modifier.width(10.dp))
         Text(
             dish.name,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (warn) FontWeight.SemiBold else FontWeight.Normal,
-            color = color,
-            modifier = Modifier.weight(1f, fill = false),
+            fontSize = 17.sp,
+            lineHeight = 24.sp,
+            fontWeight = if (warn) FontWeight.Bold else FontWeight.Medium,
+            color = if (warn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
         )
         if (warn) {
-            Spacer(Modifier.width(6.dp))
-            Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(8.dp))
+            AllergyBadge(Allergy.names(matched))
+        }
+    }
+}
+
+/** 메뉴 오른쪽 끝에 붙는 내 알레르기 표시 */
+@Composable
+private fun AllergyBadge(names: String) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
+        Row(
+            Modifier.padding(start = 7.dp, end = 9.dp, top = 3.dp, bottom = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Outlined.WarningAmber,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(3.dp))
             Text(
-                Allergy.names(matched),
-                style = MaterialTheme.typography.labelMedium,
-                color = color,
+                names,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                maxLines = 1,
             )
         }
+    }
+}
+
+/** 상단 바 제목: 마스코트 + 학교 이름 + 시간대에 맞춘 한마디 */
+@Composable
+private fun TopTitle(schoolName: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Mascot(
+            Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(
+                schoolName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 1,
+            )
+            Text(
+                greeting(LocalTime.now()),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+private fun greeting(now: LocalTime): String = when (now.hour) {
+    in 5..9 -> "좋은 아침! 아침밥 챙겨 먹어요"
+    in 10..13 -> "점심 맛있게 먹어요"
+    in 14..19 -> "저녁도 든든하게 먹어요"
+    else -> "오늘 하루도 수고했어요"
+}
+
+@Composable
+fun Mascot(modifier: Modifier = Modifier) {
+    Image(painterResource(R.drawable.mascot), contentDescription = null, modifier = modifier)
+}
+
+@Composable
+fun TodayBadge() {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+        Text(
+            "오늘",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp),
+        )
     }
 }
 
@@ -520,7 +583,7 @@ fun CenterMessage(
         modifier = Modifier.fillMaxWidth().padding(top = 72.dp, start = 24.dp, end = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp), contentAlignment = Alignment.Center) {
             CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.outline) { icon() }
         }
         Spacer(Modifier.height(16.dp))

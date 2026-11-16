@@ -2,6 +2,7 @@ package com.geupsik.alimi.ui.meal
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
@@ -19,10 +20,13 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.geupsik.alimi.domain.DishEmoji
 import com.geupsik.alimi.domain.Allergy
 import com.geupsik.alimi.domain.Dish
 import com.geupsik.alimi.ui.components.openInBrowser
@@ -35,7 +39,16 @@ fun DishSheet(dish: Dish, myAllergies: Set<Int>, onDismiss: () -> Unit) {
     val context = LocalContext.current
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 32.dp)) {
-            Text(dish.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(DishEmoji.of(dish.name), fontSize = 34.sp)
+                Spacer(Modifier.size(12.dp))
+                Text(
+                    dish.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+            }
             Spacer(Modifier.height(20.dp))
 
             Text(
